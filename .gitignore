@@ -1,0 +1,26 @@
+# R
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.code-workspace
+
+# Build artifacts (TMB / C++)
+src/*.o
+src/*.so
+src/*.dll
+src/TMB/*.o
+src/TMB/*.so
+src/TMB/*.dll
+src/TMB/*.dylib
+
+# Local development
+.Rproj.user
+.Renviron
