@@ -8,6 +8,7 @@
 #include "hmc.h"
 #include "nuts.h"
 #include "my_model.h"
+#include "ddm4_lan.h"
 
 // **************************
 // ***   REGRESSION part
@@ -46,6 +47,41 @@ Rcpp::XPtr<ModelFn> build_ddm4_cppad_xptr(
     double s2, int kmax )
 {
     ModelFn* fn = new ModelFn( make_ddm4_cppad( theta_init, rts, xs, muPrior_sp, sdPrior_sp, min_rt, s2, kmax ) );
+    return Rcpp::XPtr<ModelFn>( fn, true );
+}
+
+// **************************
+// ***   DDM 4 lan part
+// **************************
+
+// [[Rcpp::export]]
+
+void lan_load_weights_export( const std::string& path, const std::string& ddm ) 
+{
+    lan_load_weights( path, ddm );
+}
+
+// [[Rcpp::export]]
+
+double ddm4_lan_llfct_cpp( const Eigen::VectorXd& rts, const Eigen::VectorXd& xs, 
+     const double& v, const double& a, const double& t0, const double& z ) 
+{
+    return ddm4_lan_llfct( rts, xs, v, a, t0, z );
+}
+
+// [[Rcpp::export]]
+
+Eigen::VectorXd lan_forward_backward_cpp( const Eigen::VectorXd& input, const int& idx ) 
+{
+    return lan_forward_backward( input, idx );
+}
+
+// [[Rcpp::export]]
+
+Rcpp::XPtr<ModelFn> ddm4_lan_xptr(
+    const Eigen::VectorXd& rts, const Eigen::VectorXd& xs, double min_rt )
+{
+    ModelFn* fn = new ModelFn( make_ddm4_lan( rts, xs, min_rt ) );
     return Rcpp::XPtr<ModelFn>( fn, true );
 }
 

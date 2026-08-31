@@ -8,6 +8,7 @@
 #include "model_types.h"
 #include "regression.h"
 #include "ddm4.h"
+#include "ddm4_lan.h"
 #include "ddm7.h"
 
 // **************************
@@ -89,6 +90,20 @@ inline ModelFn make_ddm4_cppad( const Eigen::VectorXd& theta_init,
     
     };
 
+}
+
+// **************************
+// ***     DDM 4 - LAN
+// **************************
+
+inline ModelFn make_ddm4_lan(
+    const Eigen::VectorXd& rts, const Eigen::VectorXd& xs,
+    // const Eigen::VectorXd& muPrior_sp, const Eigen::VectorXd& sdPrior_sp,
+    const double min_rt )
+{
+    return [rts, xs, min_rt](const Eigen::VectorXd& theta) {
+        return ddm4_lan( theta, rts, xs, min_rt );
+    };
 }
 
 // **************************

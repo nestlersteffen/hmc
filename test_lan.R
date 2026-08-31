@@ -1,4 +1,13 @@
 
+nll4 <- function( parm, rt, xs ) {
+    ll <- rtdists::ddiffusion( rt, xs + 1, a=parm[2], v=parm[1], t0=parm[4], z=parm[3] )
+    if ( any( ll == 0) | any( ll == Inf ) ) {
+         idx <- which( ll == 0 | ll == Inf ) 
+         ll[idx] <- 10^-29
+    }
+    -sum( log( ll ) )
+}
+
 # source("C:/Users/Steffen/Steffen Arbeitet/Gitordner/hmc/R/dual_averaging.R")
 # source("C:/Users/Steffen/Steffen Arbeitet/Gitordner/hmc/R/estimate_mass_matrix.R")
 # source("C:/Users/Steffen/Steffen Arbeitet/Gitordner/hmc/R/make_args.R")
@@ -13,50 +22,52 @@ source("E:/Github/hmc/R/nuts_cpp.R")
 
 library( Rcpp )
 Sys.setenv(PKG_CPPFLAGS = '-I"E:/Github/hmc/inst/include/"')
+
+sink("build_log.txt")
 sourceCpp( "E:/Github/hmc/src/exports.cpp", rebuild=TRUE )
+sink()
 
-# script <- '
-# library(Rcpp)
-# Sys.setenv(PKG_CPPFLAGS = \'-I"C:/Users/Steffen/Steffen Arbeitet/Gitordner/hmc/inst/include/" -fmax-errors=5\')
-# sourceCpp("C:/Users/Steffen/Steffen Arbeitet/Gitordner/hmc/src/exports.cpp", rebuild = TRUE)
-# '
-# writeLines(script, "build.R")
+# Laden der Matrizen
 
-# system2("Rscript", "build.R",
-#         stdout = "compile_log.txt",
-#         stderr = "compile_log.txt")
+path <- "E:/Github/hmc/inst/extdata/four/"
+lan_load_weights_export( path=path, ddm="four" )
 
-# %%%%%%%%%%%%%%%%%%%%%%%
-# %%% Regression
+# llfct der Daten:
 
 set.seed(123)
-n <- 1000
-X <- mvtnorm::rmvnorm(n,rep(0,2),matrix(c(1,0.3,0.3,1),2,2))
-y <- 3 + X%*%c(0.4,0.2) + rnorm(n,0,sqrt(1.5))
 
-inits <- c( rep(0, 3), log( sd( y ) ) )
-args  <- make_args(biter=1000, burnin=500 )
+v     <- 1.00; a <- 0.80; z <- 0.40; t0 <- 0.3
+df    <- rtdists::rdiffusion( 10000, a=a, v=v, t0=t0, z=z )
+df$xs <- ifelse( df$response == "lower", 0, 1 )
 
-# build the pointer:
+v  <- 0
+a  <- runif(1,0.5,2)
+z  <- a/2
+t0 <- min( df$rt ) + 0.1*runif(1,0,0.1)
+w  <- z/a
 
-model_ptr <- build_regression_model_cppad_xptr( theta_init=inits, y=y, X=cbind(1,X), lambda2=10, a=1, b=1 )
-evaluate_model_ptr( inits, model_ptr )
+system.time({ 
+    ll <- nll4( c(v,a,z,t0), df$rt[1], df$xs[1] ) 
+})
 
-# now sample:
+numDeriv::grad( x=c(v,a,z,t0), func=nll4, rt=df$rt[1], xs=df$xs[1] )
 
-test <- hmc_chain_cpp( model_ptr=model_ptr, args=args, verbose=TRUE, inits=inits, find_epsilon=TRUE )
-round( colMeans( test$parms ), 4)
-test$p_accept_post
-test$p_divergent_post
+ddm4_lan_llfct_cpp( df$rt, df$xs, v, a, t0, z )
 
-test <- nuts_chain_cpp(model_ptr=model_ptr, args=args, verbose=TRUE, inits=inits, find_epsilon=TRUE )
-round( colMeans( test$parms ), 4)
-mean( test$steps )
-mean( test$alphas )
-test$p_divergent_post
+lan_forward_backward_cpp( c(a,v,t0,z,df$xs[1],df$rt[1] ), 4 )
+
+model_ptr <- ddm4_lan_xptr( rts=df$rt, xs=df$xs, 
+    #muPrior_sp=c(0,0,0,0), sdPrior_sp=c(1,1,1,1), 
+    min( df$rt ) )
+
+system.time({
+    evaluate_model_ptr( c(v,log(a-z),log(z),log(t0)), model_ptr )
+})
+
+
 
 # %%%%%%%%%%%%%%%
-# %%% DDM 4:
+# %%% DDM 4: analytic
 
 set.seed(123)
 
@@ -93,8 +104,11 @@ mean( test$steps )
 mean( test$alphas )
 test$p_divergent_post
 
-(apply(test$divergent_samples[rowSums(test$divergent_samples) != 0, ], 2, sd))
-apply( test$parms, 2, sd )
+# %%%%%%%%%%%%%%%
+# %%% DDM 4: neural net
+
+
+
 
 # %%%%%%%%%%%%%%%
 # %%% DDM 7:
