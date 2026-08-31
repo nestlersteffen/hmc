@@ -23,11 +23,7 @@
 //  Spezifikation nach Dao et al. (2025).
 // =====================================================================
 
-// PI als double-Konstante: spart Tape-Knoten gegenueber einer
-// AD-Variante, da PI nicht von theta abhaengt.
-namespace ddm7_detail {
-    const double PI = 3.14159265358979323846;
-}
+// inline constexpr double DDM_PI = 3.14159265358979323846;
 
 // ---------------------------------------------------------------------
 //  Integrand: Dichte bei festem z und festem t0
@@ -40,8 +36,7 @@ inline CppAD::AD<double> ddm7_integrand(
     const CppAD::AD<double>& sv,
     const int& kmax )
 {
-    const double PI = ddm7_detail::PI;
-
+    
     // Schritt 1: effektive Entscheidungszeit
     CppAD::AD<double> td = tx - t0;
     CppAD::AD<double> td_safe = CppAD::CondExpGt( td, CppAD::AD<double>(1e-10),
@@ -49,7 +44,7 @@ inline CppAD::AD<double> ddm7_integrand(
 
     // Schritt 2: multiplikative Terme (sv analytisch marginalisiert)
     CppAD::AD<double> tdsv2 = 1.0 + td_safe*sv*sv;
-    CppAD::AD<double> log_mult1 = CppAD::log( PI ) - 2.0*CppAD::log(a)
+    CppAD::AD<double> log_mult1 = std::log( DDM_PI ) - 2.0*CppAD::log(a)
                                   - 0.5*CppAD::log( tdsv2 );
     CppAD::AD<double> log_mult2 = -0.5*( v*v*td_safe + 2.0*v*z - z*z*sv*sv ) / tdsv2;
 
@@ -59,8 +54,8 @@ inline CppAD::AD<double> ddm7_integrand(
     for ( int k = 1; k <= kmax; k++ ){
 
         //* Elemente der Summe:
-        CppAD::AD<double> pt_1     = CppAD::sin( (PI*k*z)/a );
-        CppAD::AD<double> log_pt_2 = (-0.5*PI*PI*k*k*td_safe)/(a*a);
+        CppAD::AD<double> pt_1     = CppAD::sin( (DDM_PI*k*z)/a );
+        CppAD::AD<double> log_pt_2 = (-0.5*DDM_PI*DDM_PI*k*k*td_safe)/(a*a);
 
         //* aufsummieren:
         CppAD::AD<double> log_hist = CppAD::log( CppAD::AD<double>(k) ) + log_pt_2;
@@ -74,13 +69,6 @@ inline CppAD::AD<double> ddm7_integrand(
     return CppAD::CondExpGt( out, CppAD::AD<double>(1e-29),
                              out, CppAD::AD<double>(1e-29) );
 }
-
-// ---------------------------------------------------------------------
-//  Dichte: doppelte Gauss-Legendre-Quadratur ueber z und t0
-//
-//  pts/wgh sind Knoten und Gewichte auf [-1,1] und reine Daten
-//  (kein AD noetig).
-// ---------------------------------------------------------------------
 
 inline CppAD::AD<double> ddm7_density(
     const CppAD::AD<double>& tx,
@@ -143,11 +131,10 @@ inline CppAD::AD<double> ddm7_density(
 
 inline CppAD::ADFun<double> ddm7_tape(
     const Eigen::VectorXd& theta,
-    const Eigen::VectorXd& rts, const Eigen::VectorXi& xs,
+    const Eigen::VectorXd& rts, const Eigen::VectorXd& xs,
     const Eigen::VectorXd& pts, const Eigen::VectorXd& wgh,
     const Eigen::VectorXd& muPrior_sp, const Eigen::VectorXd& sdPrior_sp,
-    const double min_rt,
-    const int kmax )
+    const double min_rt, const int kmax )
 {
 
     int p = theta.size();   // Anzahl der Parameter (hier 7)
@@ -182,17 +169,17 @@ inline CppAD::ADFun<double> ddm7_tape(
     CppAD::AD<double> sv  = CppAD::exp( ad_theta[4] );
     CppAD::AD<double> sz  = CppAD::exp( ad_theta[5] );
 
-    // st0 in (0, min_rt) -- Voraussetzung fuer die t0-Parametrisierung:
-    CppAD::AD<double> u_st0 = 1.0 / (1.0 + CppAD::exp( -ad_theta[6] ));
-    CppAD::AD<double> st0   = min_rt * u_st0;
-
     // z > sz/2  und  a > z + sz/2:
     CppAD::AD<double> z = CppAD::exp( ad_theta[2] ) + 0.5*sz;
     CppAD::AD<double> a = CppAD::exp( ad_theta[1] ) + z + 0.5*sz;
 
+    // st0 in (0, min_rt) -- Voraussetzung fuer die t0-Parametrisierung:
+    CppAD::AD<double> st0 = min_rt / (1.0 + CppAD::exp( -ad_theta[6] ));
     // t0 - st0/2 in (0, min_rt - st0):
-    CppAD::AD<double> u_t0 = 1.0 / (1.0 + CppAD::exp( -ad_theta[3] ));
-    CppAD::AD<double> t0   = 0.5*st0 + (min_rt - st0)*u_t0;
+    CppAD::AD<double> t0  = 0.5*st0 + (min_rt - st0)/(1.0 + CppAD::exp( -ad_theta[3] ));
+
+    //CppAD::AD<double> st0 = CppAD::exp( ad_theta[6] );
+    //CppAD::AD<double> t0  = 0.5*st0 + CppAD::exp( ad_theta[3] );
 
     // -----------------------------------------------------------------
     // Schritt 3: Berechnung der Posterior
@@ -205,8 +192,7 @@ inline CppAD::ADFun<double> ddm7_tape(
 
         CppAD::AD<double> rt = rts(i);
 
-        // Spiegelung fuer die obere Schwelle. xs ist ein reiner
-        // Datenvektor, der Branch steht also zur Tape-Zeit fest.
+        // Spiegelung fuer die obere Schwelle:
         CppAD::AD<double> tmp = ( xs(i) == 0 )
             ? ddm7_density( rt, a, z,   v, t0, sv, sz, st0, pts, wgh, kmax )
             : ddm7_density( rt, a, a-z, -v, t0, sv, sz, st0, pts, wgh, kmax );
@@ -216,10 +202,6 @@ inline CppAD::ADFun<double> ddm7_tape(
     }
 
     // 3.2 Priors (Normalverteilung auf der unbeschraenkten Skala)
-    //
-    // Kein Jacobian noetig: die Priors sitzen direkt auf theta.
-    // Implizit ergibt das auf der Originalskala log-normale bzw.
-    // logit-normale Priors.
 
     CppAD::AD<double> ll_p = 0.0;
     for (int i = 0; i < p; i++) {

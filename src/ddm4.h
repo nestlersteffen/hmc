@@ -5,16 +5,18 @@
 #include <cppad/cppad.hpp>
 #include "model_types.h"
 
+// inline constexpr double DDM_PI = 3.14159265358979323846;
+
 inline CppAD::AD<double> ddm4_dstand( 
     const CppAD::AD<double>& t, 
     const CppAD::AD<double>& a, const CppAD::AD<double>& w, const CppAD::AD<double>& v, 
     const double& s2, const int& kmax )
 {
 
-    CppAD::AD<double> PI = 4.0 * CppAD::atan(CppAD::AD<double>(1.0));
+    // CppAD::AD<double> DDM_PI = 4.0 * CppAD::atan(CppAD::AD<double>(1.0));
 
     // Step 1: compute multiplicative term:
-    CppAD::AD<double> log_mult = CppAD::log( s2*PI ) - 2*CppAD::log(a) + ( -w*a*v - 0.5*v*v*t )/s2;
+    CppAD::AD<double> log_mult = CppAD::log( s2*DDM_PI ) - 2*CppAD::log(a) + ( -w*a*v - 0.5*v*v*t )/s2;
 
     // Step 1: we approximate the infinite sum:
     CppAD::AD<double> tmp_sum = 0.0;
@@ -22,8 +24,8 @@ inline CppAD::AD<double> ddm4_dstand(
     for ( int k = 1; k < kmax; k++ ){
 
         //* compute elements of the sum:
-        CppAD::AD<double> pt_1 = CppAD::sin( PI*k*w );
-        CppAD::AD<double> log_pt_2 = (-0.5*PI*PI*k*k*s2*t)/(a*a);
+        CppAD::AD<double> pt_1 = CppAD::sin( DDM_PI*k*w );
+        CppAD::AD<double> log_pt_2 = (-0.5*DDM_PI*DDM_PI*k*k*s2*t)/(a*a);
 
         //* compute the sum and save:
         CppAD::AD<double> log_hist = CppAD::log( k ) + log_pt_2;

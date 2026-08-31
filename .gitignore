@@ -4,6 +4,9 @@
 .Rproj.user/
 *.Rproj
 
+test.R
+test_r.R
+
 # OS
 .DS_Store
 Thumbs.db
