@@ -63,10 +63,13 @@ void lan_load_weights_export( const std::string& path, const std::string& ddm )
 
 // [[Rcpp::export]]
 
-double ddm4_lan_llfct_cpp( const Eigen::VectorXd& rts, const Eigen::VectorXd& xs, 
-     const double& v, const double& a, const double& t0, const double& z ) 
+double ddm4_lan_posterior_export( 
+    const Eigen::VectorXd& theta,
+    const Eigen::VectorXd& rts, const Eigen::VectorXd& xs, 
+    const Eigen::VectorXd& muPrior_sp, const Eigen::VectorXd& sdPrior_sp,
+    double min_rt ) 
 {
-    return ddm4_lan_llfct( rts, xs, v, a, t0, z );
+    return ddm4_lan_posterior( theta, rts, xs, muPrior_sp, sdPrior_sp, min_rt );
 }
 
 // [[Rcpp::export]]
@@ -79,9 +82,22 @@ Eigen::VectorXd lan_forward_backward_cpp( const Eigen::VectorXd& input, const in
 // [[Rcpp::export]]
 
 Rcpp::XPtr<ModelFn> ddm4_lan_xptr(
-    const Eigen::VectorXd& rts, const Eigen::VectorXd& xs, double min_rt )
+    const Eigen::VectorXd& rts, const Eigen::VectorXd& xs, 
+    const Eigen::VectorXd& muPrior_sp, const Eigen::VectorXd& sdPrior_sp,
+    double min_rt )
 {
-    ModelFn* fn = new ModelFn( make_ddm4_lan( rts, xs, min_rt ) );
+    ModelFn* fn = new ModelFn( make_ddm4_lan( rts, xs, muPrior_sp, sdPrior_sp, min_rt ) );
+    return Rcpp::XPtr<ModelFn>( fn, true );
+}
+
+// [[Rcpp::export]]
+
+Rcpp::XPtr<ModelFn> ddm4_lan_batch_xptr(
+    const Eigen::VectorXd& rts, const Eigen::VectorXd& xs, 
+    const Eigen::VectorXd& muPrior_sp, const Eigen::VectorXd& sdPrior_sp,
+    double min_rt )
+{
+    ModelFn* fn = new ModelFn( make_ddm4_lan_batch( rts, xs, muPrior_sp, sdPrior_sp, min_rt ) );
     return Rcpp::XPtr<ModelFn>( fn, true );
 }
 
