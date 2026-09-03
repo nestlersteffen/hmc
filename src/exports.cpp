@@ -8,7 +8,7 @@
 #include "hmc.h"
 #include "nuts.h"
 #include "my_model.h"
-#include "ddm4_lan.h"
+#include "ddm_lan.h"
 
 // **************************
 // ***   REGRESSION part
@@ -74,30 +74,12 @@ double ddm4_lan_posterior_export(
 
 // [[Rcpp::export]]
 
-Eigen::VectorXd lan_forward_backward_cpp( const Eigen::VectorXd& input, const int& idx ) 
-{
-    return lan_forward_backward( input, idx );
-}
-
-// [[Rcpp::export]]
-
 Rcpp::XPtr<ModelFn> ddm4_lan_xptr(
     const Eigen::VectorXd& rts, const Eigen::VectorXd& xs, 
     const Eigen::VectorXd& muPrior_sp, const Eigen::VectorXd& sdPrior_sp,
     double min_rt )
 {
     ModelFn* fn = new ModelFn( make_ddm4_lan( rts, xs, muPrior_sp, sdPrior_sp, min_rt ) );
-    return Rcpp::XPtr<ModelFn>( fn, true );
-}
-
-// [[Rcpp::export]]
-
-Rcpp::XPtr<ModelFn> ddm4_lan_batch_xptr(
-    const Eigen::VectorXd& rts, const Eigen::VectorXd& xs, 
-    const Eigen::VectorXd& muPrior_sp, const Eigen::VectorXd& sdPrior_sp,
-    double min_rt )
-{
-    ModelFn* fn = new ModelFn( make_ddm4_lan_batch( rts, xs, muPrior_sp, sdPrior_sp, min_rt ) );
     return Rcpp::XPtr<ModelFn>( fn, true );
 }
 

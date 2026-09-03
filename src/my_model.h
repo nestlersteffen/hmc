@@ -8,8 +8,8 @@
 #include "model_types.h"
 #include "regression.h"
 #include "ddm4.h"
-#include "ddm4_lan.h"
 #include "ddm7.h"
+#include "ddm_lan.h"
 
 // **************************
 // ***     REGRESSION
@@ -93,30 +93,6 @@ inline ModelFn make_ddm4_cppad( const Eigen::VectorXd& theta_init,
 }
 
 // **************************
-// ***     DDM 4 - LAN
-// **************************
-
-inline ModelFn make_ddm4_lan(
-    const Eigen::VectorXd& rts, const Eigen::VectorXd& xs,
-    const Eigen::VectorXd& muPrior_sp, const Eigen::VectorXd& sdPrior_sp,
-    const double min_rt )
-{
-    return [rts, xs, muPrior_sp, sdPrior_sp, min_rt](const Eigen::VectorXd& theta) {
-        return ddm4_lan( theta, rts, xs, muPrior_sp, sdPrior_sp, min_rt );
-    };
-}
-
-inline ModelFn make_ddm4_lan_batch(
-    const Eigen::VectorXd& rts, const Eigen::VectorXd& xs,
-    const Eigen::VectorXd& muPrior_sp, const Eigen::VectorXd& sdPrior_sp,
-    const double min_rt )
-{
-    return [rts, xs, muPrior_sp, sdPrior_sp, min_rt](const Eigen::VectorXd& theta) {
-        return ddm4_lan_batch( theta, rts, xs, muPrior_sp, sdPrior_sp, min_rt );
-    };
-}
-
-// **************************
 // ***     DDM 7
 // **************************
 
@@ -151,6 +127,20 @@ inline ModelFn make_ddm7_cppad( const Eigen::VectorXd& theta_init,
     
     };
 
+}
+
+// **************************
+// ***     DDM - LAN
+// **************************
+
+inline ModelFn make_ddm4_lan(
+    const Eigen::VectorXd& rts, const Eigen::VectorXd& xs,
+    const Eigen::VectorXd& muPrior_sp, const Eigen::VectorXd& sdPrior_sp,
+    const double min_rt )
+{
+    return [rts, xs, muPrior_sp, sdPrior_sp, min_rt](const Eigen::VectorXd& theta) {
+        return ddm4_lan( theta, rts, xs, muPrior_sp, sdPrior_sp, min_rt );
+    };
 }
 
 #endif // MY_MODEL_H

@@ -1,6 +1,6 @@
 
-#ifndef DDM4_LAN_H
-#define DDM4_LAN_H
+#ifndef DDM_LAN_H
+#define DDM_LAN_H
 
 #include <RcppEigen.h>
 #include <fstream>
@@ -61,17 +61,7 @@ inline void lan_load_weights(const std::string& path, const std::string& ddm)
 
 // functions for forward call only:
 
-inline double lan_forward(const Eigen::VectorXd& input ) // not used...
-{
-    Eigen::VectorXd x = input;
-    x = (W1.transpose() * x + b1).array().tanh();
-    x = (W2.transpose() * x + b2).array().tanh();
-    x = (W3.transpose() * x + b3).array().tanh();
-    x = W4.transpose() * x + b4;  // linear, letzte Schicht ohne Aktivierung
-    return x(0);
-}
-
-inline Eigen::VectorXd lan_forward_batch( const Eigen::MatrixXd& X ) 
+inline Eigen::VectorXd lan_forward( const Eigen::MatrixXd& X ) 
 {
     // Layer 1:
     Eigen::MatrixXd H1 = X * W1;                 
@@ -91,44 +81,7 @@ inline Eigen::VectorXd lan_forward_batch( const Eigen::MatrixXd& X )
     return H4.col(0);                            
 }
 
-inline Eigen::VectorXd lan_forward_backward( const Eigen::VectorXd& input, const int& idx )
-{
-    
-    // - Aktivierungen fuer Forward- und Backward-Pass zwischenspeichern:
-    std::vector<Eigen::VectorXd> activations(5);
-
-    // - Forward-Pass:
-    activations[0] = input;
-    Eigen::VectorXd x = input;
-
-    x = (W1.transpose() * x + b1).array().tanh();
-    activations[1] = x;
-    x = (W2.transpose() * x + b2).array().tanh();
-    activations[2] = x;
-    x = (W3.transpose() * x + b3).array().tanh();
-    activations[3] = x;
-    x = W4.transpose() * x + b4;
-    activations[4] = x;
-    double output = x(0);
-
-    // - Backward-Pass:
-    Eigen::VectorXd d(1);
-    d(0) = 1.0;
-    d = (W4 * d).array() * (1.0 - activations[3].array().square());
-    d = (W3 * d).array() * (1.0 - activations[2].array().square());
-    d = (W2 * d).array() * (1.0 - activations[1].array().square());
-
-    // - Gradient bzgl. des Inputs:
-    Eigen::VectorXd grad_input = W1 * d;
-
-    // - Output + erste idx Gradienten-Eintraege zusammenstellen:
-    Eigen::VectorXd result(1 + idx);
-    result(0) = output;
-    result.segment(1, idx) = grad_input.head(idx);
-    return result;
-}
-
-inline void lan_forward_backward_batch( const Eigen::MatrixXd& X, const int& idx, 
+inline void lan_forward_backward( const Eigen::MatrixXd& X, const int& idx, 
     double& ll_data, Eigen::VectorXd& gr_data )
 {
     
@@ -162,6 +115,8 @@ inline void lan_forward_backward_batch( const Eigen::MatrixXd& X, const int& idx
 
 }
 
+// function to compute the posterior -- to check the computations
+
 inline double ddm4_lan_posterior( const Eigen::VectorXd& theta,
     const Eigen::VectorXd& rts, const Eigen::VectorXd& xs, 
     const Eigen::VectorXd& muPrior_sp, const Eigen::VectorXd& sdPrior_sp,
@@ -185,20 +140,6 @@ inline double ddm4_lan_posterior( const Eigen::VectorXd& theta,
     t0 = min_rt / ( 1.0 + std::exp(-theta(3) ) );
 
     // compute llfct:
-    // double ll = 0.0;
-    // Eigen::VectorXd input(6);
-    // // loop through the data:
-    // for ( int i = 0; i < n; i++ ) {
-    //     input(0) = a;
-    //     input(1) = v;
-    //     input(2) = t0;
-    //     input(3) = z;
-    //     input(4) = xs(i);
-    //     input(5) = rts(i);
-    //     ll += lan_forward( input );
-    // }
-
-    // compute llfct:
     Eigen::MatrixXd X(n, 6);
     X.col(0).setConstant(a);
     X.col(1).setConstant(v);
@@ -206,7 +147,7 @@ inline double ddm4_lan_posterior( const Eigen::VectorXd& theta,
     X.col(3).setConstant(z);
     X.col(4) = xs;
     X.col(5) = rts;
-    Eigen::VectorXd ll_values = lan_forward_batch(X);
+    Eigen::VectorXd ll_values = lan_forward(X);
     double ll = ll_values.sum();
 
     // compute prior:
@@ -218,84 +159,12 @@ inline double ddm4_lan_posterior( const Eigen::VectorXd& theta,
         ll_p += -std::log(sd) - (resid*resid)/(2*sd*sd);
     }
 
-    // return..
+    // return ...
     double out = -1.0*(ll+ll_p);
     return out;
 }
 
 inline ModelResult ddm4_lan( const Eigen::VectorXd& theta, 
-    const Eigen::VectorXd& rts, const Eigen::VectorXd& xs,
-    const Eigen::VectorXd& muPrior_sp, const Eigen::VectorXd& sdPrior_sp,
-    const double min_rt ) 
-{
-    
-    //- transform parameters:
-    double v, a, z, t0;
-    v  = theta(0);
-    // a  = std::exp( theta(1) ) + std::exp( theta(2) );
-    // z  = std::exp( theta(2) );
-    // t0 = std::exp( theta(3) );
-    a  = std::exp( theta(1) );
-    double w = 1 / ( 1.0 + std::exp(-theta(2) ) );
-    z  = a*w;
-    double u_t0 = 1 / ( 1.0 + std::exp(-theta(3) ) );
-    t0 = min_rt*u_t0;
-
-    //- get information for the loop:
-    int n = rts.size();
-    int p = theta.size();
-
-    Eigen::VectorXd output(5);
-    output.setZero();
-    Eigen::VectorXd input(6);
-    input.setZero();
-    
-    //- loop to compute ll and grad part for the data:
-    for ( int i = 0; i < n; i++ ) {
-        input(0) = a;
-        input(1) = v;
-        input(2) = t0;
-        input(3) = z;
-        input(4) = xs(i);
-        input(5) = rts(i);
-        output += lan_forward_backward( input, 4 );
-    }
-
-    //- compute prior part:
-    double ll_p = 0.0;
-    for (int i = 0; i < p; i++) {
-        double mu = muPrior_sp(i);
-        double sd = sdPrior_sp(i);
-        double resid = theta(i) - mu;
-        ll_p += -std::log(sd) - (resid*resid)/(2*sd*sd);
-    }
-
-    //- first part of gradient:
-    Eigen::MatrixXd J(4,4);
-    J.setZero();
-    J(0,1) = a; 
-    J(1,0) = 1;
-    J(2,3) = t0*(1-u_t0);
-    J(3,1) = z; J(3,2) = z*(1-w);
-    Eigen::VectorXd grad = J.transpose()*(output.segment(1, 4));
-
-    //- now we add the prior part of the gradient:
-    for (int i = 0; i < p; i++) {
-        double mu = muPrior_sp(i);
-        double sd = sdPrior_sp(i);
-        double resid = theta(i) - mu;
-        grad(i) += -resid/(sd*sd);
-    }
-
-    //- make the list:
-    ModelResult res;
-    res.fn = -1*( output(0) + ll_p );
-    res.gr = -1*grad;
-    return res;
-
-}
-
-inline ModelResult ddm4_lan_batch( const Eigen::VectorXd& theta, 
     const Eigen::VectorXd& rts, const Eigen::VectorXd& xs,
     const Eigen::VectorXd& muPrior_sp, const Eigen::VectorXd& sdPrior_sp,
     const double min_rt ) 
@@ -328,7 +197,7 @@ inline ModelResult ddm4_lan_batch( const Eigen::VectorXd& theta,
     
     double ll_data;
     Eigen::VectorXd gr_data;
-    lan_forward_backward_batch(X,4,ll_data,gr_data);
+    lan_forward_backward(X,4,ll_data,gr_data);
 
     //- compute prior part:
     double ll_p = 0.0;
@@ -364,4 +233,4 @@ inline ModelResult ddm4_lan_batch( const Eigen::VectorXd& theta,
 
 }
 
-#endif // DDM4_LAN_H 
+#endif // DDM_LAN_H 
