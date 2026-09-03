@@ -5,30 +5,6 @@
 #include <cppad/cppad.hpp>
 #include "model_types.h"
 
-// =====================================================================
-//  7-Parameter Drift-Diffusion-Model (Ratcliff)
-//
-//  Parameter (auf der Originalskala):
-//    v    Drift
-//    a    Schwelle
-//    z    Startpunkt (absolut, nicht relativ!)
-//    t0   Non-Decision-Time (Mittelwert)
-//    sv   SD der Drift-Variabilitaet
-//    sz   Breite der uniformen Startpunkt-Variabilitaet
-//    st0  Breite der uniformen t0-Variabilitaet
-//
-//  Die sv-Variabilitaet ist analytisch marginalisiert, sz und st0
-//  werden per Gauss-Legendre-Quadratur (Tensorprodukt) integriert.
-//
-//  Spezifikation nach Dao et al. (2025).
-// =====================================================================
-
-// inline constexpr double DDM_PI = 3.14159265358979323846;
-
-// ---------------------------------------------------------------------
-//  Integrand: Dichte bei festem z und festem t0
-// ---------------------------------------------------------------------
-
 inline CppAD::AD<double> ddm7_integrand(
     const CppAD::AD<double>& tx,
     const CppAD::AD<double>& a, const CppAD::AD<double>& z,

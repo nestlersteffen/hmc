@@ -22,7 +22,7 @@ find_reasonable_epsilon_r <- function( theta=NULL, model_fn=NULL, M=NULL, invM=N
     H0 <- compute_H_r( theta=theta, r=r0, model_fn=model_fn, invM=invM )
     
     #- make a leapfrog step
-    step <- leapfrog_step( theta=theta, r=r0, model_fn=model_fn, invM=invM, epsilon=epsilon )
+    step <- leapfrog_step_r( theta=theta, r=r0, model_fn=model_fn, invM=invM, epsilon=epsilon )
     H1   <- compute_H_r( r=step$r, invM=invM, fn_val=step$fn )
     
     #- Sicherheitscheck vor Richtungsbestimmung

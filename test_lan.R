@@ -64,40 +64,55 @@ z  <- a/2
 t0 <- min( df$rt ) + 0.1*runif(1,0,0.1)
 w  <- z/a
 # inits <- c( v, log(a-z), log(z), log(t0) )
-
 inits <- c( v, log( a ), qlogis( w ), log( t0 )  )
+args <- make_args( biter=1000, burnin=500, badapt1=100, badapt2=100, max_depth_adapt=10 )
 
-ddm4_lan_posterior_export( inits, df$rt, df$xs, c(0,0,0,0), c(1,1,1,1), min( df$rt ) )
-numDeriv::grad( x=inits, func=ddm4_lan_posterior_export,
-    rts=df$rt, xs=df$xs, muPrior_sp=c(0,0,0,0), sdPrior_sp=c(1,1,1,1), 
-    min_rt=min( df$rt ))
+####- fit model with cppAD
 
-model_ptr <- ddm4_lan_xptr( rts=df$rt, xs=df$xs, 
-    muPrior_sp=c(0,0,0,0), sdPrior_sp=c(1,1,1,1), 
-    min( df$rt ) )
-evaluate_model_ptr( inits, model_ptr )
-
-model_ptr_test <- build_ddm4_cppad_xptr( theta_init=inits, rts=df$rt, xs=df$xs, 
+model_ptr_ad <- build_ddm4_cppad_xptr( theta_init=inits, rts=df$rt, xs=df$xs, 
     muPrior_sp=c(0,0,0,0), sdPrior_sp=c(1,1,1,1), 
     min( df$rt ), 1, 50 )
-evaluate_model_ptr( inits, model_ptr_test )
+evaluate_model_ptr( inits, model_ptr_ad )
+
+system.time({ 
+    test_ad <- nuts_chain_cpp( model_ptr=model_ptr_ad, args=args, verbose=TRUE, inits=inits, 
+        find_epsilon=TRUE )
+})
+#   User      System verstrichen 
+# 160.32        0.63      166.46 
+round( colMeans( test_ad$parms ), 4)
+mean( test_ad$parms[,1] )
+mean( exp( test_ad$parms[,2] ) )
+mean( exp( test_ad$parms[,2] )*plogis( test_ad$parms[,3] ) )
+mean( min( df$rt )*plogis( test_ad$parms[,4] ) )
+mean( test_ad$steps )
+mean( test_ad$alphas )
+test_ad$p_divergent_post
+
+# ddm4_lan_posterior_export( inits, df$rt, df$xs, c(0,0,0,0), c(1,1,1,1), min( df$rt ) )
+# numDeriv::grad( x=inits, func=ddm4_lan_posterior_export,
+#     rts=df$rt, xs=df$xs, muPrior_sp=c(0,0,0,0), sdPrior_sp=c(1,1,1,1), 
+#     min_rt=min( df$rt ))
+
+model_ptr_lan <- ddm4_lan_xptr( rts=df$rt, xs=df$xs, muPrior_sp=c(0,0,0,0), sdPrior_sp=c(1,1,1,1), 
+    min( df$rt ) )
+evaluate_model_ptr( inits, model_ptr_lan )
 
 ## the hmc chain:
 
-args <- make_args( biter=1000, burnin=500, badapt1=100, badapt2=100, max_depth_adapt=10 )
-
 system.time({ 
-test <- nuts_chain_cpp( model_ptr=model_ptr2, args=args, verbose=TRUE, inits=inits, find_epsilon=TRUE )
+    test_lan <- nuts_chain_cpp( model_ptr=model_ptr_lan, args=args, verbose=TRUE, inits=inits, find_epsilon=TRUE )
 })
-round( colMeans( test$parms ), 4)
-mean( test$steps )
-mean( test$alphas )
-test$p_divergent_post
+#  User      System verstrichen 
+# 47.40        0.34       48.36 
+round( colMeans( test_lan$parms ), 4)
+mean( test_lan$parms[,1] )
+mean( exp( test_lan$parms[,2] ) )
+mean( exp( test_lan$parms[,2] )*plogis( test_lan$parms[,3] ) )
+mean( min( df$rt )*plogis( test_lan$parms[,4] ) )
+mean( test_lan$steps )
+mean( test_lan$alphas )
+test_lan$p_divergent_post
 
-system.time({ 
-test2 <- nuts_chain_cpp( model_ptr=model_ptr_test, args=args, verbose=TRUE, inits=inits, find_epsilon=TRUE )
-})
-round( colMeans( test2$parms ), 4)
-mean( test2$steps )
-mean( test2$alphas )
-test2$p_divergent_post
+
+

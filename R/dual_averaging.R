@@ -34,6 +34,7 @@ dual_averaging <- function( theta0=NULL, n_iter=NULL, step_fn=NULL, epsilon_init
         #     log_eps_bar <- log( 0.001 )
         # }
         eps_bar <- exp( log_eps_bar )
+        # print( paste0("m: ", m, " | eps_bar: ", eps_bar ))
     }
     return( list( theta=theta, epsilon=eps_bar ) )
 }

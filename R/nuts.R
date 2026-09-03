@@ -22,7 +22,7 @@ nuts_step_r <- function ( current_theta=NULL, model_fn=NULL, epsilon=NULL,
 	  
 	all_theta <- matrix( current_theta, nrow=1 )
 	all_r     <- matrix( r0, nrow = 1 )
-	all_fn    <- fn0
+	all_fn    <- c(fn0)
 
 	#- we make the NUTS steps:
 	j <- 0
@@ -54,9 +54,9 @@ nuts_step_r <- function ( current_theta=NULL, model_fn=NULL, epsilon=NULL,
             r     <- step$r
 
             # look at the current energy:
-            H_i <- compute_H_r( r=r, invM=invM, fn_val=step.fn )
+            H_i <- compute_H_r( r=r, invM=invM, fn_val=step$fn )
             if ( is.na( H_i ) | is.infinite( H_i ) | abs(H_i - H0) > 1000.0 ) {
-                batch_divergent <- true;
+                batch_divergent <- TRUE;
                 divergent_theta <- theta;
                 break
             }
@@ -112,7 +112,7 @@ nuts_step_r <- function ( current_theta=NULL, model_fn=NULL, epsilon=NULL,
    	H_proposal <- compute_H_r( r=new_r, invM=invM, fn_val=new_fn )
   
   	# mittlere Akzeptanzwahrscheinlichkeit:
-  	alpha <- mean( pmin( 1, exp( as.numeric( H0 ) - H_all[-1] ) ) )
+  	alpha <- if ( nrow( all_theta ) > 1 ) mean( pmin( 1, exp( as.numeric( H0 ) - H_all[-1] ) ) ) else 0.0
 
   	# make a divergence check
 	divergent <- batch_divergent | abs( H0 - H_proposal ) > 1000
