@@ -8,9 +8,6 @@
 #include "model_types.h"
 #include "regression.h"
 #include "ddm4.h"
-#include "ddm7.h"
-#include "ddm7_w.h"
-#include "ddm_lan.h"
 
 // **************************
 // ***     REGRESSION
@@ -91,90 +88,6 @@ inline ModelFn make_ddm4_cppad( const Eigen::VectorXd& theta_init,
     
     };
 
-}
-
-// **************************
-// ***     DDM 7
-// **************************
-
-inline ModelFn make_ddm7_cppad( const Eigen::VectorXd& theta_init,
-    const Eigen::VectorXd& rts, const Eigen::VectorXd& xs,
-    const Eigen::VectorXd& pts, const Eigen::VectorXd& wgh,
-    const Eigen::VectorXd& muPrior_sp, const Eigen::VectorXd& sdPrior_sp,
-    const double min_rt, const int kmax )
-{
-    
-    // make the tape:
-    auto tape = std::make_shared<CppAD::ADFun<double>>(
-        ddm7_tape( theta_init, rts, xs, pts, wgh, 
-            muPrior_sp, sdPrior_sp, min_rt, kmax ) );
-
-    // der eigentliche Aufruf:
-    return [tape]( const Eigen::VectorXd& theta ) {
-        
-        int p = theta.size();
-        std::vector<double> theta_eval(p);
-        for ( int i = 0; i < p; i++ ) theta_eval[i] = theta(i);
-
-        std::vector<double> fn_val = tape->Forward( 0, theta_eval );
-        // std::vector<double> gr_val = tape->Jacobian( theta_eval );
-        std::vector<double> tmpw(1, 1.0);                    
-        std::vector<double> gr_val = tape->Reverse(1, tmpw); 
-
-        ModelResult res;
-        res.fn = fn_val[0];
-        res.gr = Eigen::Map<Eigen::VectorXd>( gr_val.data(), p );
-        return res;
-    
-    };
-
-}
-
-inline ModelFn make_ddm7_w_cppad( const Eigen::VectorXd& theta_init,
-    const Eigen::VectorXd& rts, const Eigen::VectorXd& xs,
-    const Eigen::VectorXd& pts, const Eigen::VectorXd& wgh,
-    const Eigen::VectorXd& muPrior_sp, const Eigen::VectorXd& sdPrior_sp,
-    const double min_rt, const int kmax )
-{
-    
-    // make the tape:
-    auto tape = std::make_shared<CppAD::ADFun<double>>(
-        ddm7_w_tape( theta_init, rts, xs, pts, wgh, 
-            muPrior_sp, sdPrior_sp, min_rt, kmax ) );
-
-    // der eigentliche Aufruf:
-    return [tape]( const Eigen::VectorXd& theta ) {
-        
-        int p = theta.size();
-        std::vector<double> theta_eval(p);
-        for ( int i = 0; i < p; i++ ) theta_eval[i] = theta(i);
-
-        std::vector<double> fn_val = tape->Forward( 0, theta_eval );
-        // std::vector<double> gr_val = tape->Jacobian( theta_eval );
-        std::vector<double> tmpw(1, 1.0);                    
-        std::vector<double> gr_val = tape->Reverse(1, tmpw); 
-
-        ModelResult res;
-        res.fn = fn_val[0];
-        res.gr = Eigen::Map<Eigen::VectorXd>( gr_val.data(), p );
-        return res;
-    
-    };
-
-}
-
-// **************************
-// ***     DDM - LAN
-// **************************
-
-inline ModelFn make_ddm4_lan(
-    const Eigen::VectorXd& rts, const Eigen::VectorXd& xs,
-    const Eigen::VectorXd& muPrior_sp, const Eigen::VectorXd& sdPrior_sp,
-    const double min_rt )
-{
-    return [rts, xs, muPrior_sp, sdPrior_sp, min_rt](const Eigen::VectorXd& theta) {
-        return ddm4_lan( theta, rts, xs, muPrior_sp, sdPrior_sp, min_rt );
-    };
 }
 
 #endif // MY_MODEL_H

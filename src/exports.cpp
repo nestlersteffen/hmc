@@ -7,8 +7,7 @@
 #include "helpers.h"
 #include "hmc.h"
 #include "nuts.h"
-#include "my_model.h"
-#include "ddm_lan.h"
+#include "examples.h"
 
 // **************************
 // ***   REGRESSION part
@@ -47,69 +46,6 @@ Rcpp::XPtr<ModelFn> build_ddm4_cppad_xptr(
     double s2, int kmax )
 {
     ModelFn* fn = new ModelFn( make_ddm4_cppad( theta_init, rts, xs, muPrior_sp, sdPrior_sp, min_rt, s2, kmax ) );
-    return Rcpp::XPtr<ModelFn>( fn, true );
-}
-
-// **************************
-// ***   DDM 4 lan part
-// **************************
-
-// [[Rcpp::export]]
-
-void lan_load_weights_export( const std::string& path, const std::string& ddm ) 
-{
-    lan_load_weights( path, ddm );
-}
-
-// [[Rcpp::export]]
-
-double ddm4_lan_posterior_export( 
-    const Eigen::VectorXd& theta,
-    const Eigen::VectorXd& rts, const Eigen::VectorXd& xs, 
-    const Eigen::VectorXd& muPrior_sp, const Eigen::VectorXd& sdPrior_sp,
-    double min_rt ) 
-{
-    return ddm4_lan_posterior( theta, rts, xs, muPrior_sp, sdPrior_sp, min_rt );
-}
-
-// [[Rcpp::export]]
-
-Rcpp::XPtr<ModelFn> ddm4_lan_xptr(
-    const Eigen::VectorXd& rts, const Eigen::VectorXd& xs, 
-    const Eigen::VectorXd& muPrior_sp, const Eigen::VectorXd& sdPrior_sp,
-    double min_rt )
-{
-    ModelFn* fn = new ModelFn( make_ddm4_lan( rts, xs, muPrior_sp, sdPrior_sp, min_rt ) );
-    return Rcpp::XPtr<ModelFn>( fn, true );
-}
-
-// **************************
-// ***   DDM 7 part
-// **************************
-
-// [[Rcpp::export]]
-
-Rcpp::XPtr<ModelFn> build_ddm7_cppad_xptr(
-    Eigen::VectorXd theta_init, // muss übergeben werden, um Tape zu initialisieren
-    Eigen::VectorXd rts, Eigen::VectorXd xs,
-    Eigen::VectorXd pts, Eigen::VectorXd wgh, 
-    Eigen::VectorXd muPrior_sp, Eigen::VectorXd sdPrior_sp,
-    double min_rt, int kmax )
-{
-    ModelFn* fn = new ModelFn( make_ddm7_cppad( theta_init, rts, xs, pts, wgh, muPrior_sp, sdPrior_sp, min_rt, kmax ) );
-    return Rcpp::XPtr<ModelFn>( fn, true );
-}
-
-// [[Rcpp::export]]
-
-Rcpp::XPtr<ModelFn> build_ddm7_w_cppad_xptr(
-    Eigen::VectorXd theta_init, // muss übergeben werden, um Tape zu initialisieren
-    Eigen::VectorXd rts, Eigen::VectorXd xs,
-    Eigen::VectorXd pts, Eigen::VectorXd wgh, 
-    Eigen::VectorXd muPrior_sp, Eigen::VectorXd sdPrior_sp,
-    double min_rt, int kmax )
-{
-    ModelFn* fn = new ModelFn( make_ddm7_w_cppad( theta_init, rts, xs, pts, wgh, muPrior_sp, sdPrior_sp, min_rt, kmax ) );
     return Rcpp::XPtr<ModelFn>( fn, true );
 }
 
