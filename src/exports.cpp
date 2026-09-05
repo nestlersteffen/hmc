@@ -100,6 +100,19 @@ Rcpp::XPtr<ModelFn> build_ddm7_cppad_xptr(
     return Rcpp::XPtr<ModelFn>( fn, true );
 }
 
+// [[Rcpp::export]]
+
+Rcpp::XPtr<ModelFn> build_ddm7_w_cppad_xptr(
+    Eigen::VectorXd theta_init, // muss übergeben werden, um Tape zu initialisieren
+    Eigen::VectorXd rts, Eigen::VectorXd xs,
+    Eigen::VectorXd pts, Eigen::VectorXd wgh, 
+    Eigen::VectorXd muPrior_sp, Eigen::VectorXd sdPrior_sp,
+    double min_rt, int kmax )
+{
+    ModelFn* fn = new ModelFn( make_ddm7_w_cppad( theta_init, rts, xs, pts, wgh, muPrior_sp, sdPrior_sp, min_rt, kmax ) );
+    return Rcpp::XPtr<ModelFn>( fn, true );
+}
+
 // **************************
 // ***   general part
 // **************************
