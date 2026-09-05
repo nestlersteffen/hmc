@@ -4,8 +4,10 @@
 .Rproj.user/
 *.Rproj
 
-test.R
-test_r.R
+# files in none
+none/*.h
+none/*.R
+none/*cpp
 
 # OS
 .DS_Store
