@@ -4,9 +4,15 @@
 #  Note: step_fn is either hmc_step or nuts_step depending on used algorithm
 
 dual_averaging <- function( theta0=NULL, n_iter=NULL, step_fn=NULL, epsilon_init=NULL, 
-	delta=0.80, gamma=0.05, t0=10, kappa=0.75, verbose=FALSE )
+	args=NULL, verbose=FALSE )
 {
     
+    #- collect args:
+    delta <- args$adapt$delta
+    gamma <- args$adapt$gamma
+    t0    <- args$adapt$t0
+    kappa <- args$adapt$kappa
+
     #- define parameters:
     mu          <- log( 10 * epsilon_init )
     D_bar       <- 0

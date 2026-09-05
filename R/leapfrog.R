@@ -5,9 +5,9 @@
 #   For NUTS we need direction=-1, to integrate backwards in time
 #
 #   theta, r: numeric vectors
-#   model_fn: function(theta) -> list( fn=.., gr=...)
-#   invM: a numeric vector - diagonal of the inverse mass matrix
-#   epsilon: stepsize
+#   model_fn: function(theta) --> list( fn=.., gr=...)
+#   invM:     a numeric vector - diagonal of the inverse mass matrix
+#   epsilon:  stepsize
 #   direction: +1 ( forward) or -1 ( backwards), default=1
 
 leapfrog_step_r <- function( theta=NULL, r=NULL, model_fn=NULL, invM=NULL, 

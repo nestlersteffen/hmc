@@ -1,0 +1,20 @@
+Package: hmcX
+Type: Package
+Title: Collection of functions for HMC- and NUTS-sampling
+Version: 0.0.1
+Date: 2026-09-05
+Author: Steffen Nestler 
+Maintainer: Steffen Nestler <steffen.nestler@uni-muenster.de>
+Description: 
+    Provides functions implementing a HMC-sampler and a NUTS-Sampler in R and C++. Define your own functions in R and C++ with CppAD to obtain Bayesian estimates with HMC or NUTS.
+Depends:
+    R (>= 4.5)
+Imports: 
+    Rcpp, RcppEigen, stats, utils
+LinkingTo:
+    Rcpp, RcppEigen
+License: GPL (>= 2)
+Encoding: UTF-8
+Config/roxygen2/version: 8.0.0
+LazyData: true
+RoxygenNote: 7.3.3

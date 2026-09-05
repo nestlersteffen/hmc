@@ -133,9 +133,16 @@ nuts_step_fn_r <- function( model_fn=NULL, L=NULL, M=NULL, invM=NULL, max_depth=
     }
 }
 
-#- one nuts chain ...
+#' Obtain samples from a NUTS-chain with all subroutines implemented in R
+#'
+#' @param model_fn A closure for the model to be estimated. Expects a single argument, the parameter vector. 
+#' @param args A list of control arguments, see make_args()
+#' @param verbose A boolean argument to see the progress of the sampler, defaults to FALSE
+#' @param inits A vector of initial parameter values to start the chain
+#' @param find_epsilon A boolean argument to control whether an initial stepsize should be obtained with bracketing, defaults to TRUE
+#' @export
 
-nuts_chain_r <- function( model_fn=NULL, args=NULL, verbose=NULL, inits=NULL,find_epsilon=TRUE )
+nuts_chain_r <- function( model_fn=NULL, args=NULL, verbose=FALSE, inits=NULL,find_epsilon=TRUE )
 {
   
     #- set args for the NUTS chain:

@@ -47,7 +47,7 @@ find_reasonable_epsilon_r <- function( theta=NULL, model_fn=NULL, M=NULL, invM=N
         if (direction == -1 && alpha >= 0.5) break
     }
     
-    if ( iter == max_iter ) warning("find_reasonable_epsilon: max_iter erreicht")
+    if ( iter == max_iter ) warning("find_reasonable_epsilon: max_iter reached")
     
     return(epsilon)
 }

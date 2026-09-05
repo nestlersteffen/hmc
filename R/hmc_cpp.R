@@ -7,7 +7,14 @@ hmc_step_fn_cpp <- function( model_ptr=NULL, L=NULL, M=NULL, invM=NULL )
     }
 }
 
-#- one hmc chain
+#' Obtain samples from a HMC-chain with all subfunctions implemented in C++
+#'
+#' @param model_ptr A pointer to the model to be estimated. Expects a single argument, the parameter vector. 
+#' @param args A list of control arguments, see make_args()
+#' @param verbose A boolean argument to see the progress of the sampler, defaults to FALSE
+#' @param inits A vector of initial parameter values to start the chain
+#' @param find_epsilon A boolean argument to control whether an initial stepsize should be obtained with bracketing, defaults to TRUE
+#' @export
 
 hmc_chain_cpp <- function( model_ptr=NULL, args=NULL, verbose=NULL, inits=NULL, find_epsilon=TRUE )
 {
